@@ -5,6 +5,7 @@ import { TreeService } from './tree.service';
 
 import { FoodNode } from '../models/data-models';
 import { FlatNode } from '../models/data-models';
+import { FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-tree',
@@ -13,11 +14,15 @@ import { FlatNode } from '../models/data-models';
 })
 export class TreeComponent implements OnInit {
 
+  nodeNameFC = new FormControl('', Validators.required);
+
   flatNodeMap = new Map<FlatNode, FoodNode>();
   nestedNodeMap = new Map<FoodNode, FlatNode>();
 
   treeNodes: FoodNode[] = [];
   currentSelectedNode;
+
+  isHeaderOpen = false;
   
   transformer = (node: FoodNode, level: number) => {
     // console.log("node ", node);
@@ -27,7 +32,7 @@ export class TreeComponent implements OnInit {
     flatNode.level = level;
     flatNode.expandable = !!node.children?.length;
     flatNode.expanded = false;
-    flatNode.color = 'red';
+    flatNode.editable = false;
     this.flatNodeMap.set(flatNode, node);
     this.nestedNodeMap.set(node, flatNode);
     // console.log("this.flatNodeMap ", this.flatNodeMap);
@@ -52,7 +57,8 @@ export class TreeComponent implements OnInit {
 
   dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-  hasChild = (_: number, node: FlatNode) => node.expandable;
+  // hasChild = (_: number, node: FlatNode) => node.expandable;
+  isLevel0 = (_: number, node: FlatNode) => node.level === 0;
 
   constructor(
     private treeService: TreeService
@@ -76,7 +82,7 @@ export class TreeComponent implements OnInit {
 
   selectNode(node){
     this.currentSelectedNode = node;
-    if(this.treeControl.isExpanded(node)){
+    if(this.treeControl.isExpanded(node) && node.name){
       node.expanded = true;
     }else{
       node.expanded = false;
@@ -95,14 +101,33 @@ export class TreeComponent implements OnInit {
     console.log("currentNode ", this.currentSelectedNode);
   }
 
-  addNode(){
+  createNewFolder(event){
     console.log("datasource ", this.dataSource.data);
+
     if(this.currentSelectedNode){
       const selectedNode = this.flatNodeMap.get(this.currentSelectedNode);
-      this.treeService.insertNode(selectedNode, 'New Node');
+      this.treeService.addFolder(selectedNode);
     }else{
-      this.treeService.insertNode(null, 'New Node');
+      this.treeService.addFolder(null);
     }
+    event.stopPropagation();
 
+  }
+
+  editNode(node){
+    node.editable = true;
+    this.nodeNameFC.setValue(node.name);
+  }
+
+  saveNode(node){
+    const editableNode = this.flatNodeMap.get(node);
+    this.treeService.updateNode(editableNode, this.nodeNameFC.value);
+    node.editable = false;
+    console.log("dataSource", this.dataSource.data);
+    console.log("treeControl ", this.treeControl.dataNodes);
+  }
+
+  closeEditableNode(node){
+    node.editable = false;
   }
 }

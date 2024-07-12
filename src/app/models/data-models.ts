@@ -8,5 +8,5 @@ export class FlatNode {
     name: string;
     level: number;
     expanded: boolean;
-    color: string;
+    editable: boolean;
 }
