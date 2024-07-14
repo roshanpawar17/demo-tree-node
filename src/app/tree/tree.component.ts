@@ -1,9 +1,9 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { TreeService } from './tree.service';
 
-import { FoodNode } from '../models/data-models';
+import { DownloadFolder } from '../models/data-models';
 import { FlatNode } from '../models/data-models';
 import { FormControl, Validators } from '@angular/forms';
 
@@ -14,30 +14,31 @@ import { FormControl, Validators } from '@angular/forms';
 })
 export class TreeComponent implements OnInit {
 
-  nodeNameFC = new FormControl('', Validators.required);
+  downloadedFolders: DownloadFolder[] = [];
 
-  flatNodeMap = new Map<FlatNode, FoodNode>();
-  nestedNodeMap = new Map<FoodNode, FlatNode>();
+  folderNameFC = new FormControl('', Validators.required);
 
-  treeNodes: FoodNode[] = [];
-  currentSelectedNode;
+  flatNodeMap = new Map<FlatNode, DownloadFolder>();
+  nestedNodeMap = new Map<DownloadFolder, FlatNode>();
+
+  // treeNodes: DownloadFolder[] = [];
+  currentSelectedFolder;
+  newFolder = null;
 
   isHeaderOpen = false;
+  isNewFolder = false;
+
+  @ViewChild('folder') folder: ElementRef;
   
-  transformer = (node: FoodNode, level: number) => {
-    // console.log("node ", node);
+  transformer = (node: DownloadFolder, level: number) => {
     const existingNode = this.nestedNodeMap.get(node);
     const flatNode = existingNode && existingNode.name === node.name ? existingNode : new FlatNode();
     flatNode.name = node.name;
     flatNode.level = level;
     flatNode.expandable = !!node.children?.length;
-    flatNode.expanded = false;
-    flatNode.editable = false;
+    flatNode.selected = false;
     this.flatNodeMap.set(flatNode, node);
     this.nestedNodeMap.set(node, flatNode);
-    // console.log("this.flatNodeMap ", this.flatNodeMap);
-    // console.log("this.nestedNodeMap ", this.nestedNodeMap);
-    // console.log("flatNode ", flatNode);
     return flatNode;
   };
 
@@ -57,15 +58,16 @@ export class TreeComponent implements OnInit {
 
   dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-  // hasChild = (_: number, node: FlatNode) => node.expandable;
-  isLevel0 = (_: number, node: FlatNode) => node.level === 0;
+  hasNoContent = (_: number, node: FlatNode) => node.name === '';
 
   constructor(
     private treeService: TreeService
   ) {
-    this.treeService.dataChange.subscribe((data)=>{
-      this.dataSource.data = data;
-      console.log("datasource ", this.dataSource.data);
+
+    this.treeService.setDownloadedFoldersDataObservable.subscribe((res: DownloadFolder[])=>{
+      if(res){
+        this.dataSource.data = res;
+      }
     });
   }
 
@@ -75,59 +77,101 @@ export class TreeComponent implements OnInit {
 
   getData(){
     this.treeService.getData().subscribe((res)=>{
-      this.dataSource.data = res;
-      console.log("datasource ", this.dataSource.data);
+      this.downloadedFolders = res;
+      this.treeService.setDownloadedFoldersData.next(this.downloadedFolders);
     })
   }
 
-  selectNode(node){
-    this.currentSelectedNode = node;
-    if(this.treeControl.isExpanded(node) && node.name){
-      node.expanded = true;
+  selectFolder(folder){
+    this.clearSelection(this.downloadedFolders);
+    if(this.treeControl.isExpanded(folder)){
+      this.currentSelectedFolder = folder;
+      folder.selected = true;
     }else{
-      node.expanded = false;
-    }
-    console.log("currentNode ", this.currentSelectedNode);
-    console.log("datasource ", this.treeControl.dataNodes);
+      folder.selected = false;
+      this.currentSelectedFolder = null;
+    }  
   }
 
-  onBlur(node){
-    console.log("node ", node);
-    if(node.expanded){
-      this.currentSelectedNode = node;
-    }else{
-      this.currentSelectedNode = null;
-    }
-    console.log("currentNode ", this.currentSelectedNode);
+  clearSelection(folders: DownloadFolder[]){
+    folders.forEach((folder)=>{
+      let node = this.nestedNodeMap.get(folder);
+      node.selected = false;
+      if(folder.children){
+        this.clearSelection(folder.children);
+      }
+    })
   }
+
 
   createNewFolder(event){
-    console.log("datasource ", this.dataSource.data);
-
-    if(this.currentSelectedNode){
-      const selectedNode = this.flatNodeMap.get(this.currentSelectedNode);
-      this.treeService.addFolder(selectedNode);
+    this.isNewFolder = true;
+    if(this.currentSelectedFolder){
+      const selectedNode = this.flatNodeMap.get(this.currentSelectedFolder);
+      this.addFolder(selectedNode);
     }else{
-      this.treeService.addFolder(null);
+      this.addFolder(null);
     }
     event.stopPropagation();
 
   }
 
-  editNode(node){
-    node.editable = true;
-    this.nodeNameFC.setValue(node.name);
+  addFolder(parentFolder){
+    this.newFolder = { name : '' };
+    if(parentFolder){
+      if (parentFolder.children) {
+        parentFolder.children.push(this.newFolder);
+        this.treeService.setDownloadedFoldersData.next(this.downloadedFolders);
+      } else {
+        parentFolder.children = [];
+        parentFolder.children.push(this.newFolder);
+        this.treeService.setDownloadedFoldersData.next(this.downloadedFolders);
+      }   
+    }else{
+      this.downloadedFolders.unshift(this.newFolder);
+      this.treeService.setDownloadedFoldersData.next(this.downloadedFolders);
+    }
   }
 
-  saveNode(node){
-    const editableNode = this.flatNodeMap.get(node);
-    this.treeService.updateNode(editableNode, this.nodeNameFC.value);
-    node.editable = false;
-    console.log("dataSource", this.dataSource.data);
-    console.log("treeControl ", this.treeControl.dataNodes);
+  cancelNewFolder(event){
+    if(this.removeNewFolder(this.downloadedFolders, this.newFolder)){
+      this.newFolder = null;
+      this.isNewFolder = false;
+      this.treeService.setDownloadedFoldersData.next(this.downloadedFolders);
+      this.currentSelectedFolder = null;
+      this.folderNameFC.reset();
+    };
   }
 
-  closeEditableNode(node){
-    node.editable = false;
+  removeNewFolder(downloadedFolders, newFolder){
+    for (let i = 0; i < downloadedFolders.length; i++) {
+      if (downloadedFolders[i] === newFolder) {
+        downloadedFolders.splice(i, 1);
+        return true;
+      } else if (downloadedFolders[i].children) {
+        if (this.removeNewFolder(downloadedFolders[i].children, newFolder)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
+
+
+  saveNewFolder(){
+    this.newFolder.name = this.folderNameFC.value;
+    this.treeService.insertFolder(this.downloadedFolders).subscribe({
+      next: (res)=>{
+        this.newFolder = null;
+        this.isNewFolder = false;
+        this.treeService.setDownloadedFoldersData.next(res);
+        this.currentSelectedFolder = null;
+        this.folderNameFC.reset();
+      },
+      error: (err)=>{
+        console.log(err);
+      }
+    });
+  }
+
 }

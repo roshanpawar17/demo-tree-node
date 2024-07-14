@@ -1,12 +1,11 @@
-export interface FoodNode {
+export interface DownloadFolder {
     name: string;
-    children?: FoodNode[];
+    children?: DownloadFolder[];
 } 
   
 export class FlatNode {
     expandable: boolean;
     name: string;
     level: number;
-    expanded: boolean;
-    editable: boolean;
+    selected: boolean;
 }

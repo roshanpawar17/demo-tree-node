@@ -1,5 +1,5 @@
 <div *ngIf="isHeaderOpen">
-  <div class="controls">
+  <div class="controls" *ngIf="!newFolder">
     <button mat-button mat-flat-button color="primary" (click)="createNewFolder($event)">
       + New Folder
     </button>
@@ -9,20 +9,20 @@
     </button>
   </div>
 
-  <!-- <div>
-    <button mat-button mat-flat-button color="primary" >
+  <div class="controls" *ngIf="newFolder">
+    <button mat-button mat-flat-button color="primary" [disabled]="!folderNameFC.valid" (click)="saveNewFolder()">
       Save
     </button>
-    <button mat-button mat-stroked-button color="warn">
+    <button mat-button mat-stroked-button color="warn" (click)="cancelNewFolder($event)">
       Cancel
     </button>
-  </div> -->
+  </div>
 </div>
 
 <mat-accordion>
-  <mat-expansion-panel (click)="isHeaderOpen = !isHeaderOpen">
+  <mat-expansion-panel>
     <!-- Accordion Header -->
-    <mat-expansion-panel-header>
+    <mat-expansion-panel-header (click)="isHeaderOpen = !isHeaderOpen">
       <mat-panel-title>
         <div class="accordian-header">
             <!-- Title -->
@@ -34,20 +34,33 @@
     <!-- Accordion body -->
     <div class="accordian-body">
       <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-        <mat-card class="new-folder" *matTreeNodeDef="let node;" [ngStyle]="{'margin': node.level===0 ? '5px 0' : ''}">
-          <mat-tree-node matTreeNodeToggle (click)="selectNode(node)" (blur)="onBlur(node)" matTreeNodePadding>
-            <button mat-icon-button >
-              <mat-icon class="mat-icon-rtl-mirror">
-                {{treeControl.isExpanded(node) && node.name ? 'expand_more' : 'chevron_right'}}
-              </mat-icon>
-            </button>      
-            <p *ngIf="node.name" class="node-name">{{node.name}}</p>    
-            <mat-form-field *ngIf="!node.name" appearance="outline">
-              <mat-label>Name</mat-label>
-              <input matInput placeholder="Enter Name" [formControl]="nodeNameFC">
-            </mat-form-field>
-          </mat-tree-node>
+        <mat-card class="new-folder" *matTreeNodeDef="let node" >
+            <mat-tree-node matTreeNodeToggle tabindex="0" (click)="selectFolder(node)" [ngStyle]="{'background-color': node.selected ? 'rgb(199 223 235)' : ''}" matTreeNodePadding>
+              <button mat-icon-button >
+                <mat-icon class="mat-icon-rtl-mirror">
+                  {{treeControl.isExpanded(node) && node.name ? 'expand_more' : 'chevron_right'}}
+                </mat-icon>
+              </button>      
+              <p class="node-name" 
+              [ngClass]="{'fb' : node.level === 0 || node.selected, 
+                          'fs' : node.level !== 0, 
+                          'cg' : node.level !== 0 && !node.selected}"
+              >
+              {{node.name}}
+              </p>    
+            </mat-tree-node>
         </mat-card>
+          <mat-card class="new-folder" *matTreeNodeDef="let node; when: hasNoContent" >
+            <mat-tree-node tabindex="0" [ngStyle]="{'border' : newFolder ? '1px solid rgb(132, 132, 241)' : ''}" matTreeNodePadding #folder>
+              <button mat-icon-button>
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+              <mat-form-field appearance="outline">
+                <mat-label>Name</mat-label>
+                <input matInput placeholder="Enter Name" [formControl]="folderNameFC" autofocus="true" >
+              </mat-form-field>
+            </mat-tree-node> 
+          </mat-card>
       </mat-tree>
     </div>
   </mat-expansion-panel>
