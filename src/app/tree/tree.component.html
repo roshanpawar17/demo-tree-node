@@ -1,67 +1,93 @@
-<div *ngIf="isHeaderOpen">
-  <div class="controls" *ngIf="!newFolder">
-    <button mat-button mat-flat-button color="primary" (click)="createNewFolder($event)">
-      + New Folder
-    </button>
-    <button mat-button mat-stroked-button color="warn">
-      <mat-icon>delete_outline</mat-icon>
-      Delete
-    </button>
-  </div>
+<div class="content-container full-width">
+ <div class="full-height full-width overflow-auto" fxLayout="column">
+   <mat-card>
+   <div class="full-width header-search-field-custom p_t_5" fxLayout="row" fxLayoutAlign="space-between center">
+     <!-- Search -->
+     <div fxLayout="row" class="search-bar-custom full-height">
+       <input matInput id="search_input" fxFlex="3 1 100%" type="text" [ngClass]="{'primary_Border': searchInput.value}" class="disabled-input-custom" placeholder="Search" autocomplete="off" required [formControl]="searchInput"/>
+       <div fxFlex="3 1 30%">
+         <!-- <button id="search_btn" [class.search_btn_disabled]="!searchInput.value" class="search_btn" mat-button mat-flat-button color="primary" disabled="{{!searchInput.value}}"> Search</button> -->
+       </div>
+     </div>
+     <div *ngIf="isHeaderOpen">
+       <!-- Create new folder, upload file in folder and delete folder -->
+       <div *ngIf="!isNewFolder && !fileSelected" fxLayout="row" fxLayoutGap="8px">
+         <button mat-button mat-flat-button color="primary" (click)="createNewFolder($event)">
+           <img src="../../../assets/images/ADD_WHITE.svg" alt="Add icon">
+           New Folder
+         </button>
+         <button mat-button mat-flat-button color="primary">
+           <img src="../../../assets/images/UPLOAD_WHITE.svg" alt="Upload icon">
+           Upload File
+         </button>
+         <button mat-button mat-stroked-button color="warn" (click)="deleteExistingFolder()">
+           <img src="../../../assets/images/DELETE_RED.svg" alt="Delete icon">
+           Delete
+         </button>
+       </div>
 
-  <div class="controls" *ngIf="newFolder">
-    <button mat-button mat-flat-button color="primary" [disabled]="!folderNameFC.valid" (click)="saveNewFolder()">
-      Save
-    </button>
-    <button mat-button mat-stroked-button color="warn" (click)="cancelNewFolder($event)">
-      Cancel
-    </button>
-  </div>
+
+       <!-- New folder save and cancel -->
+       <div *ngIf="isNewFolder" fxLayout="row" fxLayoutGap="8px">
+         <button mat-button mat-flat-button color="primary" [disabled]="!folderNameFC.valid" (click)="saveNewFolder()">
+           Save
+         </button>
+         <button mat-button mat-stroked-button color="warn" (click)="cancelNewFolder()">
+           Cancel
+         </button>
+       </div>
+
+
+       <!-- Download file -->
+       <div *ngIf="fileSelected">
+         <button mat-button mat-flat-button color="primary" (click)="downloadFile()">
+           <img src="../../../assets/images/DOWNLOAD_WHITE.svg" alt="Download icon">
+           Download File
+         </button>
+       </div>
+     </div>
+   </div>
+   </mat-card>
+   <div>
+     <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="file-tree">
+       <!-- For new folder -->
+       <mat-tree-node *matTreeNodeDef="let node; when: hasNoContent" matTreeNodePadding #folder>
+         <div class="mat-tree-node" [ngClass]="isNewFolder ? 'new-folder' : ''" fxLayout="row" fxLayoutGap="8px">
+           <mat-icon>chevron_right</mat-icon>
+           <mat-form-field class="wolken-form-field-sm folder-name-field" appearance="outline">
+             <mat-label>Name</mat-label>
+             <input matInput placeholder="Enter Folder Name" [formControl]="folderNameFC" autofocus="true">
+           </mat-form-field>
+         </div>
+       </mat-tree-node>
+
+
+       <!-- For files-->
+       <!-- <mat-tree-node *matTreeNodeDef="let node; when: hasFile" matTreeNodePadding>
+         <div class="mat-tree-node pointer" [ngClass]="node.selected && node.level !== 0 ? 'selected-folder' : ''" (click)="selectTreeNode(node)">
+           <span class="file-name">{{node.name}}</span>
+         </div>
+       </mat-tree-node> -->
+
+
+       <!-- For has child -->
+       <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+         <div class="mat-tree-node pointer" [ngClass]="node.selected && node.level !== 0 ? 'selected-folder' : ''" fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="8px" (click)="selectTreeNode(node)" matTreeNodeToggle>
+           <mat-icon class="mat-icon-sm pointer">
+             {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+           </mat-icon>
+           <span
+             class="pointer"
+             [ngClass]="node.level === 0 ? 'primary-text' : node.level === 1 || treeControl.isExpanded(node) ? 'bold' : 'light-text' "
+           >
+             {{node.data.folderName}}
+           </span>
+          </div>
+         <!-- <div [ngClass]="{'hide': !treeControl.isExpanded(node)}" role="group">
+           <ng-container matTreeNodeOutlet></ng-container>
+         </div> -->
+       </mat-tree-node>
+     </mat-tree>
+   </div>
+ </div>
 </div>
-
-<mat-accordion>
-  <mat-expansion-panel>
-    <!-- Accordion Header -->
-    <mat-expansion-panel-header (click)="isHeaderOpen = !isHeaderOpen">
-      <mat-panel-title>
-        <div class="accordian-header">
-            <!-- Title -->
-            <span class="title">Available Downloads</span>
-        </div>
-      </mat-panel-title>
-    </mat-expansion-panel-header>
-
-    <!-- Accordion body -->
-    <div class="accordian-body">
-      <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-        <mat-card class="new-folder" *matTreeNodeDef="let node" >
-            <mat-tree-node matTreeNodeToggle tabindex="0" (click)="selectFolder(node)" [ngStyle]="{'background-color': node.selected ? 'rgb(199 223 235)' : ''}" matTreeNodePadding>
-              <button mat-icon-button >
-                <mat-icon class="mat-icon-rtl-mirror">
-                  {{treeControl.isExpanded(node) && node.name ? 'expand_more' : 'chevron_right'}}
-                </mat-icon>
-              </button>      
-              <p class="node-name" 
-              [ngClass]="{'fb' : node.level === 0 || node.selected, 
-                          'fs' : node.level !== 0, 
-                          'cg' : node.level !== 0 && !node.selected}"
-              >
-              {{node.name}}
-              </p>    
-            </mat-tree-node>
-        </mat-card>
-          <mat-card class="new-folder" *matTreeNodeDef="let node; when: hasNoContent" >
-            <mat-tree-node tabindex="0" [ngStyle]="{'border' : newFolder ? '1px solid rgb(132, 132, 241)' : ''}" matTreeNodePadding #folder>
-              <button mat-icon-button>
-                <mat-icon>chevron_right</mat-icon>
-              </button>
-              <mat-form-field appearance="outline">
-                <mat-label>Name</mat-label>
-                <input matInput placeholder="Enter Name" [formControl]="folderNameFC" autofocus="true" >
-              </mat-form-field>
-            </mat-tree-node> 
-          </mat-card>
-      </mat-tree>
-    </div>
-  </mat-expansion-panel>
-</mat-accordion>

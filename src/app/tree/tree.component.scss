@@ -1,74 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+$searchBarHeight: 36px;
 
-@mixin fs13-lh20-fw500-poppins {
-    font-family: Poppins;
-    font-size: 13px !important;
-    line-height: 20px !important;
-    font-weight: 500 !important;
+
+.header-search-field-custom {
+ max-height: $searchBarHeight;
+
+
+ .search-bar-custom {
+   height: 100%;
+   height: $searchBarHeight;
+   position: relative;
+
+
+   .search-icon {
+     position: absolute;
+     color: #5f5a5a;
+     font-size: 23px;
+     left: 6px;
+     top: 50%;
+     transform: translateY(-50%);
+   }
+
+
+   .disabled-input-custom {
+     height: 100%;
+     outline: none;
+     box-shadow: none;
+     font-size: 14px;
+     padding-left: 30px;
+     border: 1px solid #BDBDBD;
+     border-radius: 4px 0 0 4px;
+   }
+   .disabled-input-custom :focus{
+     border-color:black ;
+   }
+ }
 }
 
-.accordian{
-    &-header{
-        // display: flex;
-        // justify-content: space-between;
-        // align-items: center;
-        width: 100%;
 
-        .title{
-            @include fs13-lh20-fw500-poppins;
-        }
-    }
-
-    &-edit-controls{
-        display: flex;
-        gap: 10px;
-
-        .mat-button {
-            line-height: 25px !important;
-        }
-    }
-
-    &-body{
-        .mat-card{
-            box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.2) !important;
-        }
-
-        .new-folder{
-            width: 100%;
-            display: flex;
-            align-items: center;
-            padding: 0;
-            cursor: pointer;
-
-            .mat-form-field{
-                width: 30%;
-            }
-
-            .mat-tree-node{
-                border-radius: 5px ;
-            }
-
-
-        }
-    }
+.p10{
+ padding: 1rem;
 }
 
-.fb{
-   font-weight: bold; 
+
+.hide {
+ display: none;
 }
 
-.fs{
-    font-size: 12px
+
+.mat-tree-node{
+ padding: 0 1rem;
 }
 
-.cg{
-    color: gray;
+
+.file-tree .mat-nested-tree-node div[role=group] {
+ padding-left: 40px;
 }
 
-.controls{
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    padding: 10px
+
+.new-folder{
+ border: 1px solid blue;
+ border-radius: 5px;
 }
 
+
+.folder-name-field{
+ width: 30%;
+}
+
+
+.file-name{
+ font-style: italic;
+}
+
+
+.selected-folder{
+ background-color: blueviolet;
+}
+
+
+.file-tree div[role=group] > .mat-tree-node {
+ padding-left: 40px;
+}
+
+
+.primary-text{
+ color: var(--theme-primary-500);
+}
+
+
+.bold{
+ font-weight: 700;
+}
+
+
+.light-text{
+ color: #97999B;
+}
